@@ -1,0 +1,36 @@
+@font-face {
+	font-family: PixelFont;
+	src: url(../fonts/pixel.ttf);
+	font-weight:400;
+}
+
+body {
+	background-color: #16002e;
+	position: relative;
+}
+
+.start-btn {
+	cursor: pointer;
+	font-family: PixelFont;
+	font-size: 48px;
+	display: block;
+	border-radius: 4px;
+	border: 1px dashed #f200ff;
+	background-color: #16002e;
+	color: #f200ff;
+	padding: 20px;
+	margin: auto;
+	height: 120px;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+
+canvas {
+	display: block;
+	margin: 0 auto;
+	max-width: 100%;
+	max-height: 100%;
+}
