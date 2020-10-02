@@ -1,9 +1,8 @@
 function startGame(event) {
 	event.target.remove()
-	canv = document.createElement("canvas");
+	canv = document.getElementById("game");
 	cw = canv.width = 800;
 	ch = canv.height = 880;
-	document.body.appendChild(canv);
 	ctx = canv.getContext("2d");
 	document.addEventListener("keydown", keyPress);
 	setInterval(gameLoop, 1000/120);
@@ -250,19 +249,11 @@ function move() {
 	if (playerX < 0 || playerY < 0 || playerX > tilesCount - 1 || playerY > tilesCount - 1) {
 		fail();
 	}
-	ctx.shadowColor = tailColor;
-	ctx.shadowBlur = shadowBlur;
-	ctx.fillStyle = tailColor;
 	for (let i = 0; i < trail.length; i++) {
-		if (i == trail.length - 1) {
-			ctx.fillStyle = headColor;
-		}
-		ctx.fillRect(trail[i].x * gridStep, trail[i].y * gridStep, gridStep - 2, gridStep - 2);
 		if (trail[i].x == playerX && trail[i].y == playerY) {
 			fail();
 		}
 	}
-	ctx.shadowBlur = 0;
 	trail.push({ x : playerX, y : playerY});
 	while (trail.length > tail) {
 		trail.shift();
@@ -291,10 +282,10 @@ function move() {
 }
 
 function updateScore(points) {
-	baseMultiplier++;
 	baseMultiplierTime = 30;
 	points = points * (baseMultiplier * getMultiplier());
 	score += points;
+	baseMultiplier++;
 	pointSigns.push({x:playerX,y:playerY,points:points,timeLeft:60,size:46});
 }
 
@@ -352,12 +343,12 @@ function newGame() {
 	explosion = false;
 }
 
-function keyPress(evt) {
+function controls(keyCode) {
 	if (state != playState && failSound.paused) {
 		newGame();
 	}
 	if (directionChanged == false) {
-		switch(evt.keyCode) {
+		switch(keyCode) {
 			case keyLeft:
 				if (velocityX != 1) {
 					velocityX = -1; velocityY = 0;
@@ -381,4 +372,12 @@ function keyPress(evt) {
 		}
 		directionChanged = true;
 	}
+}
+
+function buttonTouch(keyCode) {
+	controls(keyCode);
+}
+
+function keyPress(evt) {
+	controls(evt.keyCode);
 }

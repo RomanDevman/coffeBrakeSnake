@@ -9,6 +9,24 @@ body {
 	position: relative;
 }
 
+.controls {
+	text-align: center;
+	margin: auto;
+}
+
+.btn {
+	width: 128px;
+	cursor: pointer;
+	font-family: PixelFont;
+	font-size: 48px;
+	display: inline-block;
+	border-radius: 4px;
+	border: 1px dashed #f200ff;
+	background-color: #16002e;
+	color: #f200ff;
+	padding: 30px 20px;
+}
+
 .start-btn {
 	cursor: pointer;
 	font-family: PixelFont;
@@ -18,14 +36,8 @@ body {
 	border: 1px dashed #f200ff;
 	background-color: #16002e;
 	color: #f200ff;
-	padding: 20px;
+	padding: 30px 20px;
 	margin: auto;
-	height: 120px;
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	right: 0;
 }
 
 canvas {
