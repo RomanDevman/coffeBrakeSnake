@@ -9,21 +9,30 @@ body {
 	position: relative;
 }
 
-.controls {
+#keypad {
 	display: none;
+	width: 100%;
+	position: fixed;
+	bottom: 0;
+	margin-bottom: 4rem;
+	text-align: center;
+}
+
+#keypad.visible {
+	display: block;
+}
+
+.controls-row {
+	display: block;
 	text-align: center;
 	margin: auto;
 }
 
-.controls.visible {
-	display: block;
-}
-
 .btn {
-	width: 3em;
+	width:25%;
 	cursor: pointer;
 	font-family: PixelFont;
-	font-size: 1.11rem;
+	font-size: 2rem;
 	display: inline-block;
 	border-radius: .09rem;
 	border: .02rem dashed #f200ff;
