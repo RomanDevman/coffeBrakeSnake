@@ -10,21 +10,26 @@ body {
 }
 
 .controls {
+	display: none;
 	text-align: center;
 	margin: auto;
 }
 
+.controls.visible {
+	display: block;
+}
+
 .btn {
-	width: 128px;
+	width: 3em;
 	cursor: pointer;
 	font-family: PixelFont;
-	font-size: 48px;
+	font-size: 1.11rem;
 	display: inline-block;
-	border-radius: 4px;
-	border: 1px dashed #f200ff;
+	border-radius: .09rem;
+	border: .02rem dashed #f200ff;
 	background-color: #16002e;
 	color: #f200ff;
-	padding: 30px 20px;
+	padding: .7rem .46rem;
 }
 
 .start-btn {
