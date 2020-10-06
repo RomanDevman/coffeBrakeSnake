@@ -4,6 +4,11 @@
 	font-weight:400;
 }
 
+html, body {
+	overflow-x: hidden;
+	overflow-y: hidden;
+}
+
 body {
 	background-color: #16002e;
 	position: relative;
