@@ -20,7 +20,7 @@ const failColor = "#00c8ff";
 const textColor = "#f200ff";
 
 const baseFont = "64px PixelFont";
-const baseTail = 5;
+const baseTail = 15;
 const gridStep = 20;
 const tilesCount = 40;
 
@@ -31,6 +31,8 @@ let state = waitState;
 let directionChanged = false;
 let shadowBlur = 5;
 let shadowIncrement = .1;
+
+const musicBoostTime = 23.6; //23.6
 
 //resources
 const music = new Audio("assets/cyber.mp3");
@@ -47,29 +49,7 @@ let tickTimePassed = 0;
 let direction = keyUp;
 let currentPosition = {x:0, y: 0};
 let keyPressed;
-
-
-class SnakeGame {
-	constructor(width = 400, height = 400) {
-		this.ctx;
-		this.scrWdth = width;
-		this.scrHgth = height;
-		this.createView();
-	}
-
-	startGame() {
-
-	}
-
-	createView() {
-		const canvas = document.createElement('canvas');
-		canvas.width = this.scrWdth;
-		canvas.height = this.scrHgth;
-		this.ctx = canvas.getContext("2d");
-		document.body.append(canvas);
-	}
-}
-
+let fxParticles = [];
 
 function startGame(event) {
 	event.target.remove();
@@ -77,16 +57,12 @@ function startGame(event) {
 	cw = canv.width = 800;
 	ch = canv.height = 880;
 	ctx = canv.getContext("2d");
-	// if ("ontouchstart" in document.documentElement)
-	// {
-	// 	document.getElementById('keypad').classList.add('visible');
-	// }
 
 	document.addEventListener("keydown", keyPress);
 
-	canv.addEventListener('touchstart', handleTouchStart, false);
-	canv.addEventListener('touchmove', handleTouchMove, false);
-	canv.addEventListener('touchend', handleTouchEnd, false);
+	canv.addEventListener('touchstart', handleTouchEvent);
+	canv.addEventListener('touchmove', handleTouchEvent);
+	canv.addEventListener('touchend', handleTouchEvent);
 
 	audio = new AudioContext();
 	analyser = audio.createAnalyser();
@@ -97,109 +73,20 @@ function startGame(event) {
 	window.requestAnimationFrame(gameLoop);
 }
 
-
-let movedVertical = false;
 let xDown, yDown;
 let shape;
 let moves;
+const threshold = 50;
 
-function handleTouchEnd(evt) {
-	evt.preventDefault();
-	if (state !== playState && failSound.paused && moves.length > 0) {
-		newGame();
-	}
-	moveSnake = moves;
-}
 
-function handleTouchStart(evt) {
-	evt.preventDefault();
-	xDown = evt.touches[0].clientX;
-	yDown = evt.touches[0].clientY;
-	movedVertical = false;
-	shape = "no changes";
-	moves = [];
-}
-const threshold = 100;
-function handleTouchMove(evt) {
-	evt.preventDefault();
-	let deltaX = evt.touches[0].clientX - xDown;
-	let deltaY = evt.touches[0].clientY - yDown;
-	//first step
-	if (moves.length === 0) {
-		if (deltaX < -threshold && Math.abs(deltaY) < threshold) {
-			//left
-			shape = "left";
-			moves.push("left");
-			xDown = evt.touches[0].clientX;
-			yDown = evt.touches[0].clientY;
-		} else
-		if (deltaX > threshold && Math.abs(deltaY) < threshold) {
-			//right
-			shape = "right";
-			moves.push("right");
-			xDown = evt.touches[0].clientX;
-			yDown = evt.touches[0].clientY;
-		} else
-		if (deltaY < -threshold && Math.abs(deltaX) < threshold) {
-			//left
-			shape = "up";
-			moves.push("up");
-			xDown = evt.touches[0].clientX;
-			yDown = evt.touches[0].clientY;
-		} else
-		if (deltaY > threshold && Math.abs(deltaX) < threshold) {
-			//right
-			shape = "down";
-			moves.push("down");
-			xDown = evt.touches[0].clientX;
-			yDown = evt.touches[0].clientY;
-		}
-	} else
-	//second step
-	if (moves.length >= 1) {
-		checkDirection(evt, deltaY, deltaX);
-	}
-}
-
-function checkDirection(evt, deltaY, deltaX) {
-	if (shape === "left" || shape === "right") {
-		if (deltaY < -threshold) {
-			//left
-			shape = "up";
-			moves.push("up");
-			xDown = evt.touches[0].clientX;
-			yDown = evt.touches[0].clientY;
-		}
-		if (deltaY > threshold) {
-			//left
-			shape = "down";
-			moves.push("down");
-			xDown = evt.touches[0].clientX;
-			yDown = evt.touches[0].clientY;
-		}
-	} else if (shape === "up" || shape === "down") {
-		if (deltaX < -threshold) {
-			//left
-			shape = "left";
-			moves.push("left");
-			xDown = evt.touches[0].clientX;
-			yDown = evt.touches[0].clientY;
-		}
-		if (deltaX > threshold) {
-			//left
-			shape = "right";
-			moves.push("right");
-			xDown = evt.touches[0].clientX;
-			yDown = evt.touches[0].clientY;
-		}
-	}
-}
-
-function Particle(x, y) {
+function Particle(x, y, fade = 0, vx = null, vy = null, simple = false) {
 	this.x = x * gridStep;
 	this.y = y * gridStep;
-	this.vx = -5 + Math.random() * 10;
-	this.vy = -5 + Math.random() * 10;
+	this.vx = vx ?? -5 + Math.random() * 10;
+	this.vy = vy ?? -5 + Math.random() * 10;
+	this.life = 9;
+	this.fade = fade;
+	this.simple = simple;
 }
 
 function drawScorePad() {
@@ -233,7 +120,7 @@ function gameLoop(timeStamp) {
 		case playState:
 			input();
 			animation();
-			if (tickTimePassed >= targetTickTime && (music.currentTime < 23 || music.currentTime > 23.6)) {
+			if (tickTimePassed >= targetTickTime && (music.currentTime < 23 || music.currentTime > musicBoostTime)) {
 				tickTimePassed = 0;
 				logicUpdate();
 
@@ -243,20 +130,61 @@ function gameLoop(timeStamp) {
 			break;
 	}
 
+	window.requestAnimationFrame(gameLoop);
+}
 
+function musicFx() {
 	fbc_array = new Uint8Array(analyser.frequencyBinCount);
 	bar_count = canv.width / 20;
 
 	analyser.getByteFrequencyData(fbc_array);
-	if (music.currentTime > 23.6) {
-		ctx.fillStyle = "rgba(200, 0, 255, .4)";
+	if (music.currentTime > musicBoostTime) {
+		// ctx.fillStyle = "rgba(200, 0, 255, .1)";
+		ctx.fillStyle = "rgba(0, 200, 255, .1)";
 		multipliesAud = 3;
 	} else {
-		ctx.fillStyle = "rgba(0, 200, 255, .3)";
+		ctx.fillStyle = "rgba(0, 200, 255, .1)";
 		multipliesAud = .5;
 	}
 
+	ctx.shadowBlur = 30;
+	ctx.shadowColor = textColor;
+	for (var i = 0; i < bar_count; i++) {
+		bar_pos = i;
+		bar_width = 1;
+		bar_height = -(fbc_array[i*5] * multipliesAud);
 
+		if (Math.abs(bar_height) > 100) {
+			particles.push(new Particle(bar_pos, 0, .5, 0, -(Math.random(Math.abs(bar_height)) * 10), true));
+		}
+	}
+	for (var i = 0; i < bar_count; i++) {
+		bar_pos = i;
+		bar_width = 1;
+		bar_height = -(fbc_array[i*5] * multipliesAud);
+
+		if (Math.abs(bar_height) > 100) {
+			particles.push(new Particle(bar_pos, 800, .5, 0, (Math.random(Math.abs(bar_height)) * 10), true));
+		}
+	}
+	for (var i = 0; i < bar_count; i++) {
+		bar_pos = i;
+		bar_width = 1;
+		bar_height = -(fbc_array[i*5] * multipliesAud);
+
+		if (Math.abs(bar_height) > 100) {
+			particles.push(new Particle( 0,bar_pos, .5,  -(Math.random(Math.abs(bar_height)) * 10), 0,true));
+		}
+	}
+	for (var i = 0; i < bar_count; i++) {
+		bar_pos = i;
+		bar_width = 1;
+		bar_height = -(fbc_array[i*5] * multipliesAud);
+
+		if (Math.abs(bar_height) > 100) {
+			particles.push(new Particle( 800,bar_pos, .5,  (Math.random(Math.abs(bar_height)) * 10), 0,true));
+		}
+	}
 	for (var i = 0; i < bar_count; i++) {
 		bar_pos = i * 20;
 		bar_width = 1;
@@ -281,8 +209,7 @@ function gameLoop(timeStamp) {
 		bar_height = -(fbc_array[(40 - i)*10] * multipliesAud);
 		ctx.fillRect(0, bar_pos, -bar_height, bar_width);
 	}
-
-	window.requestAnimationFrame(gameLoop);
+	ctx.shadowBlur = 0;
 }
 
 function drawMusic() {
@@ -318,8 +245,10 @@ function animation() {
 
 function drawGame() {
 	drawBackground();
+	musicFx();
 	drawItems();
-	drawSnake();	
+	drawSnake();
+	drawExplosionFrame();
 	drawPoints();
 	drawScorePad();		
 }
@@ -334,14 +263,16 @@ function drawSnake() {
 	analyser.getByteFrequencyData(fbc_array);
 
 	for (let i = 0; i < trail.length; i++) {
-		if (music.currentTime > 23.6) {
+		if (music.currentTime > musicBoostTime) {
 			if (i === trail.length - 1) {
 				ctx.fillStyle = headColor;
 				ctx.fillRect(trail[i].x * gridStep, trail[i].y * gridStep, gridStep - 2, gridStep - 2);
 			} else {
-				blockSize = (fbc_array[(trail.length - i)*5] * .12);
-				if (blockSize > 18) {
+				blockSize = (fbc_array[95] * .12);
+				if (blockSize > 12) {
 					blockSize = 18;
+				} else if (blockSize < 12) {
+					blockSize = 8;
 				}
 				// ctx.strokeRect(trail[i].x * gridStep, trail[i].y * gridStep, gridStep - 2, gridStep - 2);
 				ctx.fillRect((trail[i].x * gridStep) + (gridStep - blockSize)/2, (trail[i].y * gridStep) + (gridStep - blockSize)/2, blockSize, blockSize);
@@ -388,6 +319,7 @@ function availableFields() {
 }
 
 function drawBackground() {
+
 	ctx.fillStyle = backgroundColor;
 	ctx.fillRect(0, 0, canv.width, canv.height);
 	for (let i = 0; i < tilesCount; i++) {
@@ -403,7 +335,7 @@ function drawItems() {
 	ctx.strokeStyle = itemColor;
 	ctx.shadowBlur = shadowBlur;
 	ctx.fillStyle = itemColor;
-	if (music.currentTime > 23.6) {
+	if (music.currentTime > musicBoostTime) {
 		ctx.fillRect(appleX * gridStep, appleY * gridStep, gridStep - 2, gridStep - 2);
 	} else {
 		ctx.strokeRect(appleX * gridStep, appleY * gridStep, gridStep - 2, gridStep - 2);
@@ -416,10 +348,16 @@ function drawItems() {
 function drawExplosionFrame() {
 	ctx.shadowBlur = 25;
 	ctx.shadowColor = tailColor;
-	for(let j = 0; j < particles.length; j++){
-		let c = particles[j];
-        ctx.fillStyle = tailColor;
-		ctx.fillRect(c.x, c.y, 9, 9);
+	for(let j = 0; j < fxParticles.length; j++) {
+		let c = fxParticles[j];
+		ctx.fillStyle = tailColor;
+		if (c.simple === true) {
+			ctx.fillStyle = "rgba(200, 0, 255, .3)";
+			ctx.fillRect(c.x, c.y, 2, 2);
+		} else {
+			ctx.fillRect(c.x, c.y, c.life, c.life);
+		}
+
 		c.vx *= .997;
 		c.vy *= .997;
 		if (c.x > 790) {
@@ -440,6 +378,47 @@ function drawExplosionFrame() {
 		}
 		c.x += c.vx;
 		c.y += c.vy;
+		c.life -= c.fade;
+		if (c.life <= 0) {
+			fxParticles.shift();
+		}
+	}
+
+
+	for(let j = 0; j < particles.length; j++){
+		let c = particles[j];
+        ctx.fillStyle = tailColor;
+        if (c.simple === true) {
+			ctx.fillStyle = "rgba(200, 0, 255, .3)";
+			ctx.fillRect(c.x, c.y, 2, 2);
+		} else {
+			ctx.fillRect(c.x, c.y, c.life, c.life);
+		}
+
+		c.vx *= .997;
+		c.vy *= .997;
+		if (c.x > 790) {
+			c.x = 790;
+			c.vx *= -1;
+		}
+		if (c.y > 790) {
+			c.y = 790;
+			c.vy *= -1;
+		}
+		if (c.x < 0) {
+			c.x = 0;
+			c.vx *= -1;
+		}
+		if (c.y < 0) {
+			c.y = 0;
+			c.vy *= -1;
+		}
+		c.x += c.vx;
+		c.y += c.vy;
+		c.life -= c.fade;
+		if (c.life <= 0) {
+			particles.shift();
+		}
 	}
 	ctx.shadowBlur = 0;
 }
@@ -499,6 +478,18 @@ function logicUpdate() {
 	}
 	for (let i = 0; i < trail.length; i++) {
 		if (trail[i].x === playerX && trail[i].y === playerY) {
+			tail = tail - i;
+			for (let j = 0; j < i;j++) {
+				fxParticles.push(new Particle(trail[j].x, trail[j].y, .1));
+				fxParticles.push(new Particle(trail[j].x, trail[j].y, .1));
+				fxParticles.push(new Particle(trail[j].x, trail[j].y, .1));
+				fxParticles.push(new Particle(trail[j].x, trail[j].y, .1));
+			}
+			explosion = true;
+			failSound.play();
+			//trigger explosion
+			//minus score
+			//zero multiplier
 			// fail();
 		}
 	}
@@ -620,4 +611,91 @@ function buttonTouch(keyCode) {
 
 function keyPress(evt) {
 	controls(evt.keyCode);
+}
+
+function handleTouchEvent(evt) {
+	evt.preventDefault();
+	switch (evt.type) {
+		case 'touchstart' :
+			xDown = evt.touches[0].clientX;
+			yDown = evt.touches[0].clientY;
+			shape = "no changes";
+			moves = [];
+			break;
+		case 'touchmove' :
+			let deltaX = evt.touches[0].clientX - xDown;
+			let deltaY = evt.touches[0].clientY - yDown;
+			//first step
+			if (moves.length === 0) {
+				if (deltaX < -threshold && Math.abs(deltaY) < threshold) {
+					//left
+					shape = "left";
+					moves.push("left");
+					xDown = evt.touches[0].clientX;
+					yDown = evt.touches[0].clientY;
+				} else
+				if (deltaX > threshold && Math.abs(deltaY) < threshold) {
+					//right
+					shape = "right";
+					moves.push("right");
+					xDown = evt.touches[0].clientX;
+					yDown = evt.touches[0].clientY;
+				} else
+				if (deltaY < -threshold && Math.abs(deltaX) < threshold) {
+					//left
+					shape = "up";
+					moves.push("up");
+					xDown = evt.touches[0].clientX;
+					yDown = evt.touches[0].clientY;
+				} else
+				if (deltaY > threshold && Math.abs(deltaX) < threshold) {
+					//right
+					shape = "down";
+					moves.push("down");
+					xDown = evt.touches[0].clientX;
+					yDown = evt.touches[0].clientY;
+				}
+			} else
+			//second step
+			if (moves.length >= 1) {
+				if (shape === "left" || shape === "right") {
+					if (deltaY < -threshold) {
+						//left
+						shape = "up";
+						moves.push("up");
+						xDown = evt.touches[0].clientX;
+						yDown = evt.touches[0].clientY;
+					}
+					if (deltaY > threshold) {
+						//left
+						shape = "down";
+						moves.push("down");
+						xDown = evt.touches[0].clientX;
+						yDown = evt.touches[0].clientY;
+					}
+				} else if (shape === "up" || shape === "down") {
+					if (deltaX < -threshold) {
+						//left
+						shape = "left";
+						moves.push("left");
+						xDown = evt.touches[0].clientX;
+						yDown = evt.touches[0].clientY;
+					}
+					if (deltaX > threshold) {
+						//left
+						shape = "right";
+						moves.push("right");
+						xDown = evt.touches[0].clientX;
+						yDown = evt.touches[0].clientY;
+					}
+				}
+			}
+			break;
+		case 'touchend' :
+			if (state !== playState && failSound.paused && moves.length > 0) {
+				newGame();
+			}
+			moveSnake = moves;
+			break;
+	}
 }
